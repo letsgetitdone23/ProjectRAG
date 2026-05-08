@@ -41,6 +41,7 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
+          cache-dependency-path: nippon-india-frontend/package-lock.json
           
       - name: Install Python dependencies
         run: |
@@ -48,7 +49,8 @@ jobs:
           pip install -r requirements.txt
           
       - name: Install Node.js dependencies
-        if: hashFiles('package.json') != ''
+        if: hashFiles('nippon-india-frontend/package.json') != ''
+        working-directory: ./nippon-india-frontend
         run: npm ci
         
       - name: Validate configuration
