@@ -31,7 +31,7 @@ jobs:
       - name: Run web scraping
         id: scrape
         run: |
-          python scripts/scrape_latest_data.py
+          python scripts/scrape_data.py
         env:
           SCRAPE_ALL_SOURCES: "true"
           MAX_RETRIES: "3"

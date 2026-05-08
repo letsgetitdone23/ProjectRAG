@@ -73,9 +73,15 @@ def main():
         logger.info(f"  - Skipped: {len(results['skipped'])} URLs")
         
         # Save results summary
+        safe_summary = {
+            'timestamp': results['timestamp'],
+            'total_scraped': results['total_scraped'],
+            'total_failed': results['total_failed'],
+            'failed': results['failed']
+        }
         summary_file = Path(config['output_dir']) / f"scraping_summary_{results['timestamp'].replace(':', '-')}.json"
         with open(summary_file, 'w') as f:
-            json.dump(results, f, indent=2)
+            json.dump(safe_summary, f, indent=2)
         
         logger.info(f"Results saved to: {summary_file}")
         
