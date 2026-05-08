@@ -1075,4 +1075,6 @@ def run_multi_threaded_api_gateway(host: str = "0.0.0.0", port: int = 8000, max_
         gateway.shutdown()
 
 if __name__ == "__main__":
-    run_multi_threaded_api_gateway(max_workers=10)
+    import os
+    port = int(os.environ.get("PORT", 8000))
+    run_multi_threaded_api_gateway(port=port, max_workers=10)
