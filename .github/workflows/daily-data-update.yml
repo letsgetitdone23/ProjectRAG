@@ -37,6 +37,14 @@ jobs:
           MAX_RETRIES: "3"
         continue-on-error: false
 
+      - name: Upload scraped data
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: raw-data-${{ github.run_number }}
+          path: data/raw/
+          retention-days: 7
+
   # Job 2: Wait for scraping completion
   wait-scraping:
     needs: scrape-data
