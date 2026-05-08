@@ -18,7 +18,6 @@ services:
         value: https://nippon-india-rag-api.onrender.com
       - key: SECRET_KEY
         generateValue: true
-        value: ""
       - key: CORS_ORIGINS
         value: https://nippon-india-faq.vercel.app,https://nipponindiaim.com
     healthCheckPath: /api/health
