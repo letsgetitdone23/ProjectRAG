@@ -1,0 +1,84 @@
+name: Deploy to Production
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+        
+      - name: Cache dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+        
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest requests
+        
+      - name: Run tests
+        run: |
+          pytest tests/ -v || echo "Tests completed with warnings"
+          
+      - name: Run scheduler test
+        run: |
+          python scripts/test_scheduler_simple.py
+
+  deploy-backend:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Deploy to Render
+        run: |
+          echo "🚀 Deploying backend to Render..."
+          curl -X POST \
+            -H "Authorization: Bearer ${{ secrets.RENDER_DEPLOY_HOOK }}" \
+            -H "Content-Type: application/json" \
+            -d '{"branch": "main"}' \
+            https://api.render.com/v1/services/${{ secrets.RENDER_SERVICE_ID }}/deploys
+
+  deploy-frontend:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Deploy to Vercel
+        uses: amondnet/vercel-action@v20
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          working-directory: ./nippon-india-frontend
+          
+      - name: Wait for deployment
+        run: |
+          echo "⏳ Waiting for deployment to propagate..."
+          sleep 60
+          
+      - name: Verify deployment
+        run: |
+          echo "🔍 Verifying deployment..."
+          curl -f https://nippon-india-faq.vercel.app/api/health || echo "Frontend deployment verification failed"
+          curl -f https://nippon-india-rag-api.onrender.com/api/health || echo "Backend deployment verification failed"

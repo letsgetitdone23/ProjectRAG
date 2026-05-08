@@ -1,0 +1,202 @@
+name: Daily Mutual Fund Data Update
+on:
+  schedule:
+    # Trigger at 9:30 AM IST (4:00 AM UTC)
+    - cron: '0 4 * * *'
+  workflow_dispatch:
+
+jobs:
+  # Job 1: Web Scraping
+  scrape-data:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'schedule' && github.event.schedule == '0 4 * * *')
+    timeout-minutes: 60
+    outputs:
+      scrape-success: ${{ steps.scrape.outputs.success }}
+      scraped-count: ${{ steps.scrape.outputs.count }}
+      
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Python environment
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+          
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          
+      - name: Run web scraping
+        id: scrape
+        run: |
+          python scripts/scrape_latest_data.py
+        env:
+          SCRAPE_ALL_SOURCES: "true"
+          MAX_RETRIES: "3"
+        continue-on-error: false
+        outputs:
+          success: ${{ steps.outcome == 'success' }}
+          count: ${{ steps.scrape.outputs.count || '0' }}
+
+  # Job 2: Wait for scraping completion
+  wait-scraping:
+    needs: scrape-data
+    runs-on: ubuntu-latest
+    if: needs.scrape-data.outputs.scrape-success == 'true'
+    timeout-minutes: 5
+    
+    steps:
+      - name: Verify scraping success
+        run: |
+          echo "Scraping completed successfully"
+          echo "Scraped ${{ needs.scrape-data.outputs.scraped-count }} items"
+
+  # Job 3: Data Processing & Chunking
+  process-chunks:
+    needs: wait-scraping
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    outputs:
+      chunks-created: ${{ steps.create-chunks.outputs.count }}
+      
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Python environment
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+          
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          
+      - name: Process and chunk data
+        id: create-chunks
+        run: |
+          python scripts/process_and_chunk.py
+        env:
+          CHUNK_STRATEGY: "hybrid"
+          MAX_CHUNK_SIZE: "500"
+          MIN_CHUNK_SIZE: "200"
+        outputs:
+          count: ${{ steps.create-chunks.outputs.chunk_count || '0' }}
+
+  # Job 4: Embedding Generation
+  generate-embeddings:
+    needs: process-chunks
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    outputs:
+      embeddings-created: ${{ steps.create-embeddings.outputs.count }}
+      
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Python environment
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+          
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          
+      - name: Generate BGE embeddings
+        id: create-embeddings
+        run: |
+          python scripts/generate_bge_embeddings.py
+        env:
+          MODEL_NAME: "BAAI/bge-large-en-v1.5"
+          BATCH_SIZE: "32"
+          UPDATE_VECTOR_STORE: "true"
+        outputs:
+          count: ${{ steps.create-embeddings.outputs.embedding_count || '0' }}
+
+  # Job 5: Update Local SQLite Vector Store
+  update-vector-store:
+    needs: generate-embeddings
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    if: needs.generate-embeddings.outputs.embeddings-created > '0'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Python environment
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+          
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          
+      - name: Update SQLite vector store
+        run: |
+          python scripts/update_sqlite_vector_store.py
+        env:
+          DATABASE_PATH: "./data/vector_store.db"
+          COLLECTION_NAME: "mutual-fund-faq-bge"
+
+  # Job 6: Health Check & Validation
+  health-check:
+    needs: [update-vector-store]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Python environment
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+          
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          
+      - name: Validate RAG system health
+        run: |
+          python scripts/health_check.py
+        env:
+          TEST_QUERIES: "What is NAV of Nippon India Large Cap Fund?,What is the expense ratio of HDFC Mid-Cap Fund?"
+          
+      - name: Send notification
+        if: failure()
+        uses: actions/github-script@v6
+        with:
+          script: |
+            github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: 'Daily RAG Update Failed',
+              body: 'The daily data update workflow failed at step: ${{ job.status }}',
+              labels: ['bug', 'daily-update']
+            })
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # Job 7: Clean up old data
+  cleanup:
+    needs: [health-check]
+    runs-on: ubuntu-latest
+    if: always()
+    timeout-minutes: 10
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Cleanup old data files
+        run: |
+          python scripts/cleanup_old_data.py
+        env:
+          RETENTION_DAYS: "7"  # Keep 7 days of data

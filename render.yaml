@@ -1,0 +1,28 @@
+services:
+  - type: web
+    name: nippon-india-rag-api
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: python src/api/multi_threaded_api_gateway.py
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11
+      - key: PORT
+        value: 10000
+      - key: LOG_LEVEL
+        value: INFO
+      - key: MAX_WORKERS
+        value: 10
+      - key: NEXT_PUBLIC_API_URL
+        value: https://nippon-india-rag-api.onrender.com
+      - key: SECRET_KEY
+        generateValue: true
+        value: ""
+      - key: CORS_ORIGINS
+        value: https://nippon-india-faq.vercel.app,https://nipponindiaim.com
+    healthCheckPath: /api/health
+    healthCheckTimeout: 300
+    autoDeploy: true
+    domains:
+      - nippon-india-rag-api.onrender.com

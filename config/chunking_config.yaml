@@ -1,0 +1,178 @@
+# Chunking Configuration for Mutual Fund FAQ Assistant
+
+# General chunking settings
+general:
+  max_chunk_size: 500  # Maximum tokens per chunk
+  min_chunk_size: 200  # Minimum tokens per chunk
+  overlap_size: 50     # Token overlap between chunks
+  chunking_strategy: "hybrid"  # semantic, sliding_window, hybrid
+  
+# Semantic chunking settings
+semantic_chunking:
+  section_detection:
+    heading_tags: ["h1", "h2", "h3", "h4", "h5", "h6"]
+    min_section_size: 100
+    max_section_size: 1000
+    
+  context_preservation:
+    preserve_headings: true
+    preserve_section_context: true
+    preserve_table_context: true
+    preserve_list_hierarchy: true
+    
+  boundary_detection:
+    paragraph_boundaries: true
+    sentence_boundaries: true
+    list_item_boundaries: true
+    table_boundaries: true
+
+# Sliding window chunking settings
+sliding_window:
+  window_size: 400
+  step_size: 350  # Creates 50-token overlap
+  respect_sentence_boundaries: true
+  respect_paragraph_boundaries: true
+  
+# Hybrid chunking settings
+hybrid:
+  semantic_priority: 0.7
+  sliding_window_fallback: true
+  max_semantic_attempts: 3
+  
+# Content type specific settings
+content_types:
+  html:
+    preserve_html_structure: true
+    extract_tables_separately: true
+    extract_lists_separately: true
+    
+  pdf:
+    handle_multi_column: true
+    preserve_page_structure: false
+    extract_tables_as_chunks: true
+    
+  json:
+    chunk_by_structure: true
+    preserve_key_value_pairs: true
+    
+  text:
+    use_sentence_boundaries: true
+    use_paragraph_boundaries: true
+
+# Metadata enrichment
+metadata:
+  include_position_info: true
+  include_context_info: true
+  include_source_info: true
+  include_content_type: true
+  include_chunk_type: true
+  
+  position_metadata:
+    document_index: true
+    section_index: true
+    paragraph_index: true
+    chunk_sequence: true
+    
+  context_metadata:
+    preceding_chunk_id: true
+    following_chunk_id: true
+    section_title: true
+    parent_section: true
+    
+  source_metadata:
+    source_url: true
+    document_type: true
+    scheme_name: true
+    source_category: true
+    extraction_date: true
+
+# Quality control
+quality_control:
+  min_quality_score: 0.6
+  max_quality_score: 1.0
+  
+  quality_metrics:
+    semantic_coherence: 0.3
+    completeness: 0.3
+    context_preservation: 0.2
+    length_appropriateness: 0.2
+  
+  validation_rules:
+    - "check_minimum_length"
+    - "check_maximum_length"
+    - "check_semantic_coherence"
+    - "check_content_completeness"
+    - "check_context_preservation"
+
+# Special handling for mutual fund content
+mutual_fund_content:
+  preserve_financial_data: true
+  preserve_table_data: true
+  preserve_performance_data: true
+  
+  entity_preservation:
+    fund_names: true
+    amc_names: true
+    financial_metrics: true
+    dates: true
+    percentages: true
+    
+  special_chunks:
+    fund_overview: true
+    performance_summary: true
+    expense_details: true
+    risk_information: true
+    
+# Processing settings
+processing:
+  parallel_processing: true
+  max_workers: 4
+  batch_size: 10
+  
+  memory_management:
+    max_memory_usage: "2GB"
+    chunk_cache_size: 1000
+    cleanup_interval: 100
+  
+  error_handling:
+    retry_failed_chunks: true
+    max_retry_attempts: 3
+    skip_problematic_content: false
+
+# Output settings
+output:
+  save_chunks: true
+  save_metadata: true
+  save_quality_scores: true
+  
+  file_format: "json"
+  compression: false
+  
+  output_structure:
+    chunks_file: "chunks.json"
+    metadata_file: "chunks_metadata.json"
+    quality_report: "chunk_quality_report.json"
+
+# Embedding model configuration
+embedding:
+  model_name: "BAAI/bge-large-en-v1.5"
+  batch_size: 32
+  max_length: 512
+  normalize_embeddings: true
+  use_gpu: false
+  cache_embeddings: true
+
+# Integration settings
+integration:
+  vector_store:
+    prepare_for_embedding: true
+    include_embedding_metadata: true
+    
+  search_indexing:
+    create_search_index: true
+    include_full_text_index: true
+    
+  monitoring:
+    track_chunking_metrics: true
+    log_quality_scores: true
+    log_processing_time: true

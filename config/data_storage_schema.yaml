@@ -1,0 +1,177 @@
+# Data Storage Schema for Key Mutual Fund Metrics
+# Defines how to store NAV, Minimum SIP, Fund Size, Expense Ratio, and Rating data
+
+# Primary data structure for fund metrics
+fund_metrics_schema:
+  fund_basic_info:
+    scheme_name: string
+    amc_name: string
+    scheme_code: string
+    plan_type: string  # Direct/Growth, Regular/Growth, etc.
+    option_type: string  # Growth, Dividend, etc.
+    category: string    # Large Cap, Flexi Cap, Multi Asset Allocation
+    risk_level: string  # Low, Moderate, High, Very High
+    benchmark_index: string
+    inception_date: date
+    
+  key_metrics:
+    nav:
+      current_nav: decimal
+      nav_date: date
+      nav_change: decimal
+      nav_change_percentage: decimal
+      
+    minimum_investment:
+      lump_sum: decimal
+      sip_amount: decimal
+      additional_purchase: decimal
+      sip_frequency: string  # Monthly, Quarterly, etc.
+      
+    fund_size:
+      aum: decimal  # Assets Under Management
+      aum_date: date
+      aum_change: decimal
+      aum_change_percentage: decimal
+      number_of_folios: integer
+      
+    expense_ratio:
+      regular_plan: decimal
+      direct_plan: decimal
+      exit_load: decimal
+      entry_load: decimal
+      expense_ratio_date: date
+      
+    ratings:
+      value_research_rating: integer  # 1-5 stars
+      morningstar_rating: integer     # 1-5 stars
+      crisil_rating: string          # AAA, AA, etc.
+      riskometer_level: string        # Very High, High, Moderate, Low
+      
+  performance_data:
+    returns:
+      daily_return: decimal
+      weekly_return: decimal
+      monthly_return: decimal
+      quarterly_return: decimal
+      half_yearly_return: decimal
+      yearly_return: decimal
+      three_year_return: decimal
+      five_year_return: decimal
+      since_inception_return: decimal
+      
+    benchmark_comparison:
+      benchmark_1_year: decimal
+      benchmark_3_year: decimal
+      benchmark_5_year: decimal
+      category_average_1_year: decimal
+      category_average_3_year: decimal
+      category_average_5_year: decimal
+      
+  metadata:
+    last_updated: datetime
+    data_sources: array of strings
+    extraction_timestamp: datetime
+    quality_score: decimal
+    validation_status: string
+    source_urls: array of strings
+
+# Storage structure by scheme
+scheme_data_structure:
+  large_cap_fund:
+    file_name: "nippon_india_large_cap_fund_metrics.json"
+    update_frequency: "daily"
+    priority_sources:
+      - performance_page
+      - sid
+      - factsheet
+      
+  flexi_cap_fund:
+    file_name: "nippon_india_flexi_cap_fund_metrics.json"
+    update_frequency: "daily"
+    priority_sources:
+      - performance_page
+      - sid
+      - factsheet
+      
+  multi_asset_allocation_fund:
+    file_name: "nippon_india_multi_asset_allocation_fund_metrics.json"
+    update_frequency: "daily"
+    priority_sources:
+      - performance_page
+      - sid
+      - factsheet
+
+# Data validation rules
+validation_rules:
+  nav:
+    min_value: 0
+    max_value: 10000
+    required: true
+    format: "decimal(10,4)"
+    
+  sip_amount:
+    min_value: 100
+    max_value: 100000
+    required: true
+    format: "decimal(10,2)"
+    
+  aum:
+    min_value: 0
+    max_value: 1000000  # In crores
+    required: true
+    format: "decimal(15,2)"
+    
+  expense_ratio:
+    min_value: 0
+    max_value: 5
+    required: true
+    format: "decimal(5,2)"
+    
+  ratings:
+    value_research: {min: 1, max: 5, required: false}
+    morningstar: {min: 1, max: 5, required: false}
+    crisil: {pattern: "^(AAA|AA|A|BBB|BB|B|CCC|CC|C|D)$", required: false}
+
+# Data extraction patterns
+extraction_patterns:
+  nav:
+    - "NAV[:\\s]*₹?([0-9,.-]+)"
+    - "Net Asset Value[:\\s]*₹?([0-9,.-]+)"
+    - "NAV as on[:\\s]*([0-9,.-]+)"
+    
+  sip_amount:
+    - "Minimum SIP[:\\s]*₹?([0-9,]+)"
+    - "SIP Amount[:\\s]*₹?([0-9,]+)"
+    - "Systematic Investment Plan[:\\s]*₹?([0-9,]+)"
+    
+  fund_size:
+    - "AUM[:\\s]*₹?([0-9,.-]+)\\s*(cr|crore)"
+    - "Assets Under Management[:\\s]*₹?([0-9,.-]+)"
+    - "Fund Size[:\\s]*₹?([0-9,.-]+)"
+    
+  expense_ratio:
+    - "Expense Ratio[:\\s]*([0-9.]+%?)"
+    - "Total Expense Ratio[:\\s]*([0-9.]+%?)"
+    - "TER[:\\s]*([0-9.]+%?)"
+    
+  ratings:
+    value_research: "Value Research[:\\s]*([1-5])\\s*(?:star|★)"
+    morningstar: "Morningstar[:\\s]*([1-5])\\s*(?:star|★)"
+    crisil: "CRISIL[:\\s]*([A-Z]+)"
+    riskometer: "Riskometer[:\\s]*(Very High|High|Moderate|Low)"
+
+# Storage locations
+storage_config:
+  structured_data_dir: "data/structured"
+  metrics_files_dir: "data/metrics"
+  backup_dir: "data/backups"
+  
+  file_naming:
+    metrics: "{scheme_name}_metrics_{date}.json"
+    historical: "{scheme_name}_historical_{date}.json"
+    validation: "{scheme_name}_validation_{date}.json"
+    
+  retention_policy:
+    daily_files: 30  # days
+    weekly_files: 12  # weeks
+    monthly_files: 24 # months

@@ -1,0 +1,166 @@
+I need you to fix my Mutual Fund FAQ RAG Chatbot. The system is currently returning 
+wrong answers — it shows NAV for HDFC, ICICI, Axis, and SBI funds, but it should 
+ONLY answer questions about these 3 Nippon India schemes:
+
+1. Nippon India Large Cap Fund Direct Growth
+2. Nippon India Flexi Cap Fund Direct Growth
+3. Nippon India Multi Asset Allocation Fund Direct Growth
+
+═══════════════════════════════════════════════════════════
+PROBLEM 1 — WRONG CORPUS / MOCK RESPONSES
+═══════════════════════════════════════════════════════════
+
+The RAG service is using mock/simulated responses and referencing wrong AMCs 
+(HDFC, ICICI, SBI, Axis). Replace all mock responses and hardcoded fund data 
+with ONLY content retrieved from these official Nippon India URLs:
+
+CORPUS URLS (use ONLY these — no other AMC URLs):
+
+Groww pages:
+- https://groww.in/mutual-funds/amc/nippon-india-mutual-funds
+- https://groww.in/mutual-funds/nippon-india-large-cap-fund-direct-growth
+- https://groww.in/mutual-funds/nippon-india-flexi-cap-fund-direct-growth
+- https://groww.in/mutual-funds/nippon-india-multi-asset-allocation-fund-direct-growth
+
+Nippon India AMC official pages:
+- https://mf.nipponindiaim.com/FundsAndPerformance/Pages/NipponIndia-Large-Cap-Fund.aspx
+- https://mf.nipponindiaim.com/FundsAndPerformance/Pages/NipponIndia-Flexi-Cap-Fund.aspx
+- https://mf.nipponindiaim.com/FundsAndPerformance/Pages/NipponIndia-Multi-Asset-Allocation-Fund.aspx
+
+Scheme Information Documents (PDFs):
+- https://mf.nipponindiaim.com/InvestorServices/SIDEquity/NipponIndia-Large-Cap-Fund.pdf
+- https://mf.nipponindiaim.com/campaigns/NipponIndiaFlexiCapFund/pdf/Nippon-India-Flexicap-Fund-SID.pdf
+- https://mf.nipponindiaim.com/InvestorServices/SIDEquity/SID-NipponIndia-Multi-Asset-Allocation-Fund.pdf
+
+Regulatory:
+- https://www.sebi.gov.in/sebiweb/other/OtherAction.do?doGetFundDetails=yes&mfId=46&type=2
+- https://www.amfiindia.com/otherdata/fund-performance
+
+Each URL must be tagged with its scheme when ingested into the vector store:
+- scheme: "large_cap"    → Nippon India Large Cap Fund Direct Growth
+- scheme: "flexi_cap"    → Nippon India Flexi Cap Fund Direct Growth
+- scheme: "multi_asset"  → Nippon India Multi Asset Allocation Fund Direct Growth
+- scheme: "general"      → SEBI, AMFI, and AMC-level pages
+
+When retrieving, ALWAYS filter by scheme tag matching the user's query before 
+ranking results. Never return results from a different scheme's documents.
+
+═══════════════════════════════════════════════════════════
+PROBLEM 2 — WRONG EXAMPLE QUESTIONS IN THE UI
+═══════════════════════════════════════════════════════════
+
+Find every hardcoded example question in the frontend HTML/JS that mentions 
+HDFC, ICICI, Axis, SBI, or any fund other than Nippon India. 
+
+Replace ALL of them with ONLY these scheme-specific questions:
+
+LARGE CAP questions:
+- "What is the expense ratio of Nippon India Large Cap Fund Direct Growth?"
+- "What is the exit load for Nippon India Large Cap Fund Direct Growth?"
+- "What is the benchmark index of Nippon India Large Cap Fund Direct Growth?"
+
+FLEXI CAP questions:
+- "What is the minimum SIP amount for Nippon India Flexi Cap Fund Direct Growth?"
+- "What is the riskometer classification of Nippon India Flexi Cap Fund Direct Growth?"
+- "What is the exit load for Nippon India Flexi Cap Fund Direct Growth?"
+
+MULTI ASSET questions:
+- "What is the expense ratio of Nippon India Multi Asset Allocation Fund Direct Growth?"
+- "What is the ELSS lock-in period for Nippon India Multi Asset Allocation Fund Direct Growth?"
+- "What is the benchmark index of Nippon India Multi Asset Allocation Fund Direct Growth?"
+
+GENERAL questions:
+- "How do I download my capital gains statement from Nippon India Mutual Fund?"
+- "How do I download my account statement?"
+
+═══════════════════════════════════════════════════════════
+PROBLEM 3 — MISSING SCOPE GUARD IN RAG RETRIEVAL
+═══════════════════════════════════════════════════════════
+
+In the RAG query handler (wherever submit_query or the retrieval function lives), 
+add a scope guard at the TOP of query processing:
+
+Step 1 — Detect which scheme the user is asking about:
+  - If query contains "large cap" or "large-cap" → scheme = "large_cap"
+  - If query contains "flexi cap" or "flexi-cap" or "flexicap" → scheme = "flexi_cap"  
+  - If query contains "multi asset" or "multi-asset" → scheme = "multi_asset"
+  - If none matched → scheme = "general"
+
+Step 2 — Filter the vector store retrieval to ONLY documents tagged with 
+that scheme (plus "general" documents always included).
+
+Step 3 — If the retrieved documents do not mention Nippon India at all, 
+return this refusal:
+  "I can only answer questions about Nippon India Large Cap Fund Direct Growth, 
+   Nippon India Flexi Cap Fund Direct Growth, and Nippon India Multi Asset 
+   Allocation Fund Direct Growth. Please rephrase your question about one of 
+   these schemes."
+
+═══════════════════════════════════════════════════════════
+PROBLEM 4 — ADVISORY QUERY REFUSAL
+═══════════════════════════════════════════════════════════
+
+Add a refusal check BEFORE the RAG retrieval runs. If the user query contains 
+any of these patterns, return the refusal response immediately without calling 
+the retrieval pipeline:
+
+Patterns to refuse:
+- "should I invest", "should i invest"
+- "is it good", "is it worth"
+- "better than", "best fund", "which is better", "recommend"
+- "will it grow", "will I get returns", "expected returns"
+- "compare", "vs", "versus" (when comparing funds)
+
+Refusal response format:
+  "This assistant provides facts only and cannot offer investment advice or 
+   recommendations. For guidance on choosing funds, please visit: 
+   https://www.amfiindia.com/investor-corner/knowledge-center"
+
+═══════════════════════════════════════════════════════════
+PROBLEM 5 — RESPONSE FORMAT ENFORCEMENT
+═══════════════════════════════════════════════════════════
+
+Every answer returned by the chatbot MUST follow this exact format:
+
+[Answer in maximum 3 sentences. Facts only, no opinions.]
+
+Source: [exact URL the answer was retrieved from]
+Last updated from sources: [date the document was last fetched/indexed]
+
+If a performance or returns question is asked (contains "return", "performance", 
+"NAV history", "growth"), respond with:
+  "For performance data, please refer to the official factsheet directly."
+  Source: [the relevant Nippon India AMC fund page URL]
+
+═══════════════════════════════════════════════════════════
+PROBLEM 6 — UI DISCLAIMER AND WELCOME MESSAGE
+═══════════════════════════════════════════════════════════
+
+Ensure the UI shows:
+- A top banner: "Facts-only. No investment advice."
+- Welcome message: "Ask factual questions about Nippon India Large Cap Fund 
+  Direct Growth, Nippon India Flexi Cap Fund Direct Growth, or Nippon India 
+  Multi Asset Allocation Fund Direct Growth."
+- Remove any references to HDFC, ICICI, Axis, SBI, or generic "mutual fund" 
+  examples from the welcome screen.
+
+═══════════════════════════════════════════════════════════
+CONSTRAINTS — DO NOT VIOLATE
+═══════════════════════════════════════════════════════════
+
+- NEVER return data about any fund outside the 3 Nippon India schemes listed
+- NEVER collect or display PAN, Aadhaar, OTP, account numbers, email, or phone
+- NEVER provide investment advice, performance comparisons, or return projections
+- ALWAYS include exactly one source URL per response
+- ALWAYS include "Last updated from sources: <date>" in every response
+- Maximum 3 sentences per answer
+- Source URLs must only be from: mf.nipponindiaim.com, groww.in/mutual-funds/nippon-india*, 
+  amfiindia.com, or sebi.gov.in
+
+After making all changes, verify by testing these 3 queries:
+1. "What is the expense ratio of Nippon India Large Cap Fund Direct Growth?"
+   → Must return Nippon India Large Cap data only, with source from nipponindiaim.com or groww.in
+2. "What is the minimum SIP amount for Nippon India Flexi Cap Fund Direct Growth?"
+   → Must return Nippon India Flexi Cap data only
+3. "Should I invest in Nippon India Large Cap Fund?"
+   → Must return the advisory refusal message with amfiindia.com link

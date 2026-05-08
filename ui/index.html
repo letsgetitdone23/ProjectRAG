@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mutual Fund RAG Assistant</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            border-left: 5px solid #4CAF50;
+        }
+
+        .header h1 {
+            color: #2E7D32;
+            font-size: 2.5em;
+            margin: 0;
+            font-weight: 600;
+        }
+
+        .header .subtitle {
+            color: #4CAF50;
+            font-size: 1.2em;
+            margin-top: 10px;
+            font-weight: 500;
+        }
+
+        .disclaimer {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .disclaimer h3 {
+            color: #856404;
+            margin: 0 0 10px 0;
+            font-size: 1.1em;
+        }
+
+        .disclaimer p {
+            color: #333;
+            margin: 0;
+            font-size: 0.9em;
+            line-height: 1.4;
+        }
+
+        .examples {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+
+        .examples h3 {
+            color: #2E7D32;
+            margin: 0 0 15px 0;
+            font-size: 1.1em;
+        }
+
+        .example-questions {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .example-question {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border-left: 4px solid #4CAF50;
+        }
+
+        .example-question:hover {
+            background: #e9ecef;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .example-question .question-text {
+            font-weight: 600;
+            color: #2E7D32;
+            margin-bottom: 5px;
+        }
+
+        .example-question .question-category {
+            font-size: 0.8em;
+            color: #6c757d;
+            background: #4CAF50;
+            padding: 2px 6px;
+            border-radius: 4px;
+            display: inline-block;
+        }
+
+        .chat-container {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            margin-bottom: 30px;
+        }
+
+        .chat-header {
+            background: #f8f9fa;
+            padding: 15px 20px;
+            border-bottom: 1px solid #e9ecef;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .chat-header h3 {
+            margin: 0;
+            color: #2E7D32;
+            font-size: 1.1em;
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #4CAF50;
+            animation: pulse 2s infinite;
+        }
+
+        .status-dot.online {
+            background: #4CAF50;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        .chat-messages {
+            height: 400px;
+            overflow-y: auto;
+            padding: 20px;
+            background: #fafafa;
+        }
+
+        .message {
+            margin-bottom: 15px;
+            display: flex;
+            align-items: flex-start;
+            animation: fadeIn 0.3s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .message.user {
+            justify-content: flex-end;
+        }
+
+        .message.assistant {
+            justify-content: flex-start;
+        }
+
+        .message-content {
+            max-width: 80%;
+            padding: 15px 20px;
+            border-radius: 15px;
+            word-wrap: break-word;
+        }
+
+        .message.user .message-content {
+            background: #e3f2fd;
+            color: white;
+            border-bottom-right-radius: 15px;
+        }
+
+        .message.assistant .message-content {
+            background: #f1f3f4;
+            border: 1px solid #e9ecef;
+            border-bottom-left-radius: 15px;
+        }
+
+        .message-info {
+            font-size: 0.8em;
+            color: #6c757d;
+            margin-top: 5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .source-link {
+            color: #4CAF50;
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.3s ease;
+        }
+
+        .source-link:hover {
+            color: #45a049;
+            text-decoration: underline;
+        }
+
+        .confidence-score {
+            background: #4CAF50;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            font-weight: 600;
+        }
+
+        .input-container {
+            display: flex;
+            gap: 10px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-top: 1px solid #e9ecef;
+        }
+
+        .chat-input {
+            flex: 1;
+            padding: 12px 15px;
+            border: 2px solid #ddd;
+            border-radius: 25px;
+            font-size: 16px;
+            outline: none;
+            transition: border-color 0.3s ease;
+        }
+
+        .chat-input:focus {
+            border-color: #4CAF50;
+            box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.2);
+        }
+
+        .send-button {
+            padding: 12px 25px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: background-color 0.3s ease;
+        }
+
+        .send-button:hover {
+            background: #45a049;
+        }
+
+        .send-button:disabled {
+            background: #cccccc;
+            cursor: not-allowed;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+            color: #6c757d;
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #4CAF50;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #6c757d;
+            font-size: 0.9em;
+            border-top: 1px solid #e9ecef;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                margin: 10px;
+                padding: 15px;
+            }
+            
+            .example-questions {
+                grid-template-columns: 1fr;
+            }
+            
+            .message-content {
+                max-width: 95%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header with Welcome Interface -->
+        <div class="header">
+            <h1>🤖 Mutual Fund RAG Assistant</h1>
+            <div class="subtitle">Facts-Only FAQ System with Real-time Validation</div>
+        </div>
+
+        <!-- Disclaimer -->
+        <div class="disclaimer">
+            <h3>⚠️ Important Disclaimer</h3>
+            <p><strong>Facts-only. No investment advice.</strong> This assistant provides only factual information about mutual funds based on official sources. It does not give investment recommendations, performance comparisons, or financial advice. Always consult with a qualified financial advisor before making investment decisions.</p>
+        </div>
+
+        <!-- Example Questions -->
+        <div class="examples">
+            <h3>📋 Example Questions You Can Ask</h3>
+            <div class="example-questions">
+                <div class="example-question" onclick="askQuestion('What is the NAV of Nippon India Large Cap Fund Direct Growth?')">
+                    <div class="question-text">What is the NAV of Nippon India Large Cap Fund Direct Growth?</div>
+                    <div class="question-category">NAV Query</div>
+                </div>
+                <div class="example-question" onclick="askQuestion('What is the expense ratio of HDFC Mid-Cap Fund?')">
+                    <div class="question-text">What is the expense ratio of HDFC Mid-Cap Fund?</div>
+                    <div class="question-category">Expense Ratio</div>
+                </div>
+                <div class="example-question" onclick="askQuestion('What is the minimum SIP amount for ICICI Prudential Fund?')">
+                    <div class="question-text">What is the minimum SIP amount for ICICI Prudential Fund?</div>
+                    <div class="question-category">Minimum SIP</div>
+                </div>
+                <div class="example-question" onclick="askQuestion('What is the ELSS lock-in period for Nippon India ELSS Fund?')">
+                    <div class="question-text">What is the ELSS lock-in period for Nippon India ELSS Fund?</div>
+                    <div class="question-category">ELSS Lock-in</div>
+                </div>
+                <div class="example-question" onclick="askQuestion('What is the riskometer classification for Axis Bluechip Fund?')">
+                    <div class="question-text">What is the riskometer classification for Axis Bluechip Fund?</div>
+                    <div class="question-category">Riskometer</div>
+                </div>
+                <div class="example-question" onclick="askQuestion('Which benchmark index does Nippon India Large Cap Fund follow?')">
+                    <div class="question-text">Which benchmark index does Nippon India Large Cap Fund follow?</div>
+                    <div class="question-category">Benchmark</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Chat Interface -->
+        <div class="chat-container">
+            <div class="chat-header">
+                <h3>💬 Chat Interface</h3>
+                <div class="status-indicator">
+                    <div class="status-dot online"></div>
+                    <span>API Connected</span>
+                </div>
+            </div>
+            <div class="chat-messages" id="chatMessages">
+                <!-- Messages will be added here dynamically -->
+            </div>
+            <div class="input-container">
+                <input type="text" id="chatInput" class="chat-input" placeholder="Ask about mutual funds (e.g., NAV, expense ratio, SIP details)..." onkeypress="handleKeyPress(event)">
+                <button class="send-button" id="sendButton" onclick="sendMessage()">Send</button>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <p>🔗 Source: AMFI | AMC Official | SEBI Guidelines | 📅 Data: Real-time Validation</p>
+            <p>© 2026 Mutual Fund RAG Assistant - Facts-Only Information</p>
+        </div>
+    </div>
+
+    <script>
+        let currentSessionId = null;
+        let currentThreadId = null;
+
+        // Initialize chat with welcome message
+        window.onload = function() {
+            addMessage('assistant', '👋 Welcome to the Mutual Fund RAG Assistant! I can help you with factual information about mutual funds including NAV details, expense ratios, SIP amounts, ELSS lock-in periods, riskometer classifications, and benchmark information. All responses are based on official sources and include source citations. What would you like to know?');
+        };
+
+        function askQuestion(question) {
+            document.getElementById('chatInput').value = question;
+            sendMessage();
+        }
+
+        function handleKeyPress(event) {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                sendMessage();
+            }
+        }
+
+        async function sendMessage() {
+            const input = document.getElementById('chatInput');
+            const message = input.value.trim();
+            
+            if (!message) return;
+            
+            // Disable send button and show loading
+            const sendButton = document.getElementById('sendButton');
+            const chatMessages = document.getElementById('chatMessages');
+            
+            sendButton.disabled = true;
+            sendButton.textContent = 'Sending...';
+            
+            // Add user message
+            addMessage('user', message);
+            input.value = '';
+            
+            try {
+                // Send to API
+                const response = await fetch('http://localhost:8000/api/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        message: message,
+                        session_id: currentSessionId,
+                        thread_id: currentThreadId
+                    })
+                });
+                
+                const data = await response.json();
+                
+                // Add assistant response
+                addMessage('assistant', data.response, data.source_url, data.confidence);
+                
+            } catch (error) {
+                addMessage('assistant', `❌ Error: ${error.message}. Please try again.`, '', 0);
+            } finally {
+                // Re-enable send button
+                sendButton.disabled = false;
+                sendButton.textContent = 'Send';
+            }
+        }
+
+        function addMessage(type, content, sourceUrl = '', confidence = 0) {
+            const chatMessages = document.getElementById('chatMessages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${type}`;
+            
+            let messageContent = `
+                <div class="message-content">
+                    ${content}
+                    ${sourceUrl ? `<div class="message-info">
+                        <span class="confidence-score">Confidence: ${(confidence * 100).toFixed(1)}%</span>
+                        <a href="${sourceUrl}" target="_blank" class="source-link">📄 Source</a>
+                    </div>` : ''}
+                </div>
+            `;
+            
+            messageDiv.innerHTML = messageContent;
+            chatMessages.appendChild(messageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        // Check API connection status
+        async function checkAPIStatus() {
+            try {
+                const response = await fetch('http://localhost:8000/api/health');
+                const data = await response.json();
+                
+                const statusDot = document.querySelector('.status-dot');
+                const statusText = document.querySelector('.status-indicator span');
+                
+                if (data.status === 'healthy') {
+                    statusDot.className = 'status-dot online';
+                    statusText.textContent = 'API Connected';
+                } else {
+                    statusDot.className = 'status-dot';
+                    statusText.textContent = 'API Disconnected';
+                }
+            } catch (error) {
+                console.error('API status check failed:', error);
+            }
+        }
+
+        // Check API status every 30 seconds
+        setInterval(checkAPIStatus, 30000);
+    </script>
+</body>
+</html>

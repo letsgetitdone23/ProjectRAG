@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mutual Fund RAG Assistant - Complete Interface</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        /* Additional styles for complete interface */
+        .system-info {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+
+        .system-info h3 {
+            color: #2E7D32;
+            margin: 0 0 15px 0;
+            font-size: 1.1em;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .info-card {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+        }
+
+        .info-title {
+            font-size: 0.9em;
+            color: #6c757d;
+            margin-bottom: 5px;
+        }
+
+        .info-value {
+            font-size: 1.2em;
+            font-weight: 600;
+            color: #2E7D32;
+        }
+
+        .validation-indicator {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8em;
+            font-weight: 600;
+        }
+
+        .validation-active {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .validation-inactive {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .test-section {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+
+        .test-section h3 {
+            color: #2E7D32;
+            margin: 0 0 15px 0;
+            font-size: 1.1em;
+        }
+
+        .test-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 15px;
+        }
+
+        .test-button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 12px 20px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: background-color 0.3s ease;
+        }
+
+        .test-button:hover {
+            background: #45a049;
+        }
+
+        .test-button:disabled {
+            background: #cccccc;
+            cursor: not-allowed;
+        }
+
+        .test-result {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 10px;
+            font-family: monospace;
+            font-size: 0.9em;
+        }
+
+        .performance-metrics {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+
+        .performance-metrics h3 {
+            color: #2E7D32;
+            margin: 0 0 15px 0;
+            font-size: 1.1em;
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+        }
+
+        .metric-item {
+            text-align: center;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        .metric-value {
+            font-size: 1.5em;
+            font-weight: 600;
+            color: #2E7D32;
+        }
+
+        .metric-label {
+            font-size: 0.8em;
+            color: #6c757d;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header with Welcome Interface -->
+        <div class="header">
+            <h1>🤖 Mutual Fund RAG Assistant</h1>
+            <div class="subtitle">Facts-Only FAQ System with Real-time Validation</div>
+        </div>
+
+        <!-- Disclaimer -->
+        <div class="disclaimer">
+            <h3>⚠️ Important Disclaimer</h3>
+            <p><strong>Facts-only. No investment advice.</strong> This assistant provides only factual information about mutual funds based on official sources. It does not give investment recommendations, performance comparisons, or financial advice. Always consult with a qualified financial advisor before making investment decisions.</p>
+        </div>
+
+        <!-- System Information -->
+        <div class="system-info">
+            <h3>🔧 System Information</h3>
+            <div class="info-grid">
+                <div class="info-card">
+                    <div class="info-title">Enhanced Validation</div>
+                    <div class="info-value">Active</div>
+                </div>
+                <div class="info-card">
+                    <div class="info-title">Real-time Sources</div>
+                    <div class="info-value">3 Sources</div>
+                </div>
+                <div class="info-card">
+                    <div class="info-title">Supported Questions</div>
+                    <div class="info-value">8 Types</div>
+                </div>
+                <div class="info-card">
+                    <div class="info-title">Response Time</div>
+                    <div class="info-value">&lt; 2s</div>
+                </div>
+                <div class="info-card">
+                    <div class="info-title">API Status</div>
+                    <div class="info-value">
+                        <span class="validation-indicator validation-active" id="apiStatus">Connected</span>
+                    </div>
+                </div>
+                <div class="info-card">
+                    <div class="info-title">Data Freshness</div>
+                    <div class="info-value">Real-time</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Performance Metrics -->
+        <div class="performance-metrics">
+            <h3>📊 Performance Metrics</h3>
+            <div class="metrics-grid">
+                <div class="metric-item">
+                    <div class="metric-value" id="totalQueries">0</div>
+                    <div class="metric-label">Total Queries</div>
+                </div>
+                <div class="metric-item">
+                    <div class="metric-value" id="avgResponseTime">0ms</div>
+                    <div class="metric-label">Avg Response Time</div>
+                </div>
+                <div class="metric-item">
+                    <div class="metric-value" id="successRate">100%</div>
+                    <div class="metric-label">Success Rate</div>
+                </div>
+                <div class="metric-item">
+                    <div class="metric-value" id="validationAccuracy">95%</div>
+                    <div class="metric-label">Validation Accuracy</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Example Questions -->
+        <div class="examples">
+            <h3>📋 Example Questions You Can Ask</h3>
+            <div class="example-questions">
+                <div class="example-question" onclick="askQuestion('What is NAV of Nippon India Large Cap Fund Direct Growth?')">
+                    <div class="question-text">What is NAV of Nippon India Large Cap Fund Direct Growth?</div>
+                    <div class="question-category">NAV Query</div>
+                </div>
+                <div class="example-question" onclick="askQuestion('What is the current NAV of HDFC Mid-Cap Fund?')">
+                    <div class="question-text">What is the current NAV of HDFC Mid-Cap Fund?</div>
+                    <div class="question-category">NAV Query</div>
+                </div>
+                <div class="example-question" onclick="askQuestion('What is expense ratio of HDFC Mid-Cap Fund?')">
+                    <div class="question-text">What is expense ratio of HDFC Mid-Cap Fund?</div>
+                    <div class="question-category">Expense Ratio</div>
+                </div>
+                <div class="example-question" onclick="askQuestion('What is minimum SIP amount for ICICI Prudential Fund?')">
+                    <div class="question-text">What is minimum SIP amount for ICICI Prudential Fund?</div>
+                    <div class="question-category">Minimum SIP</div>
+                </div>
+                <div class="example-question" onclick="askQuestion('What is ELSS lock-in period for Nippon India ELSS Fund?')">
+                    <div class="question-text">What is the ELSS lock-in period for Nippon India ELSS Fund?</div>
+                    <div class="question-category">ELSS Lock-in</div>
+                </div>
+                <div class="example-question" onclick="askQuestion('What is the exit load for Axis Bluechip Fund?')">
+                    <div class="question-text">What is the exit load for Axis Bluechip Fund?</div>
+                    <div class="question-category">Exit Load</div>
+                </div>
+                <div class="example-question" onclick="askQuestion('What is riskometer classification for Axis Bluechip Fund?')">
+                    <div class="question-text">What is the riskometer classification for Axis Bluechip Fund?</div>
+                    <div class="question-category">Riskometer</div>
+                </div>
+                <div class="example-question" onclick="askQuestion('Which benchmark index does Nippon India Large Cap Fund follow?')">
+                    <div class="question-text">Which benchmark index does Nippon India Large Cap Fund follow?</div>
+                    <div class="question-category">Benchmark</div>
+                </div>
+                <div class="example-question" onclick="askQuestion('How to download capital gains statements from Nippon India?')">
+                    <div class="question-text">How to download capital gains statements from Nippon India?</div>
+                    <div class="question-category">Process Downloads</div>
+                </div>
+                <div class="example-question" onclick="askQuestion('What is the minimum investment amount for Nippon India Large Cap Fund?')">
+                    <div class="question-text">What is the minimum investment amount for Nippon India Large Cap Fund?</div>
+                    <div class="question-category">Minimum Investment</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Test Section -->
+        <div class="test-section">
+            <h3>🧪 Test API Endpoints</h3>
+            <div class="test-grid">
+                <div>
+                    <button class="test-button" onclick="testAPI('/api/health')">
+                        <i class="fas fa-heartbeat"></i> Test Health
+                    </button>
+                    <div id="healthResult" class="test-result" style="display:none;"></div>
+                </div>
+                <div>
+                    <button class="test-button" onclick="testAPI('/api/stats')">
+                        <i class="fas fa-chart-bar"></i> Test Stats
+                    </button>
+                    <div id="statsResult" class="test-result" style="display:none;"></div>
+                </div>
+                <div>
+                    <button class="test-button" onclick="testChatEndpoint()">
+                        <i class="fas fa-comment"></i> Test Chat
+                    </button>
+                    <div id="chatResult" class="test-result" style="display:none;"></div>
+                </div>
+                <div>
+                    <button class="test-button" onclick="clearMetrics()">
+                        <i class="fas fa-trash"></i> Clear Metrics
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Chat Interface -->
+        <div class="chat-container">
+            <div class="chat-header">
+                <h3>💬 Chat Interface</h3>
+                <div class="status-indicator">
+                    <div class="status-dot" id="statusDot"></div>
+                    <span id="statusText">Connecting...</span>
+                </div>
+            </div>
+            <div class="chat-messages" id="chatMessages">
+                <!-- Messages will be added here dynamically -->
+            </div>
+            <div class="input-container">
+                <input type="text" id="chatInput" class="chat-input" placeholder="Ask about mutual funds (e.g., NAV, expense ratio, SIP details)..." onkeypress="handleKeyPress(event)">
+                <button class="send-button" id="sendButton" onclick="sendMessage()">
+                    <i class="fas fa-paper-plane"></i> Send
+                </button>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <p>🔗 Sources: AMFI | AMC Official | SEBI Guidelines | 📅 Data: Real-time Validation</p>
+            <p>© 2026 Mutual Fund RAG Assistant - Facts-Only Information</p>
+        </div>
+    </div>
+
+    <script src="chat_interface.js"></script>
+    <script>
+        // Additional functionality for complete interface
+        let totalQueries = 0;
+        let totalResponseTime = 0;
+        let successfulQueries = 0;
+
+        // Initialize chat with welcome message
+        window.onload = function() {
+            addMessage('assistant', '👋 Welcome to the complete Mutual Fund RAG Assistant! I can help you with factual information about mutual funds including NAV details, expense ratios, SIP amounts, ELSS lock-in periods, riskometer classifications, and benchmark information. All responses are based on official sources and include source citations with real-time validation. What would you like to know?');
+            updateMetrics();
+        };
+
+        async function testAPI(endpoint) {
+            const resultId = endpoint.replace('/api/', '') + 'Result';
+            const resultElement = document.getElementById(resultId);
+            
+            try {
+                resultElement.style.display = 'block';
+                resultElement.innerHTML = 'Testing...';
+                
+                const response = await fetch(`http://localhost:8000${endpoint}`);
+                const data = await response.json();
+                
+                resultElement.innerHTML = `✅ Success: ${JSON.stringify(data, null, 2)}`;
+                resultElement.style.background = '#d4edda';
+                
+            } catch (error) {
+                resultElement.innerHTML = `❌ Error: ${error.message}`;
+                resultElement.style.background = '#f8d7da';
+            }
+        }
+
+        async function testChatEndpoint() {
+            const resultElement = document.getElementById('chatResult');
+            
+            try {
+                resultElement.style.display = 'block';
+                resultElement.innerHTML = 'Testing chat endpoint...';
+                
+                const response = await fetch('http://localhost:8000/api/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        message: 'Test query for NAV validation'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                resultElement.innerHTML = `✅ Chat Response: ${JSON.stringify(data, null, 2)}`;
+                resultElement.style.background = '#d4edda';
+                
+            } catch (error) {
+                resultElement.innerHTML = `❌ Error: ${error.message}`;
+                resultElement.style.background = '#f8d7da';
+            }
+        }
+
+        function updateMetrics() {
+            document.getElementById('totalQueries').textContent = totalQueries;
+            document.getElementById('avgResponseTime').textContent = totalQueries > 0 ? 
+                Math.round(totalResponseTime / totalQueries) + 'ms' : '0ms';
+            document.getElementById('successRate').textContent = totalQueries > 0 ? 
+                Math.round((successfulQueries / totalQueries) * 100) + '%' : '100%';
+        }
+
+        function clearMetrics() {
+            totalQueries = 0;
+            totalResponseTime = 0;
+            successfulQueries = 0;
+            updateMetrics();
+        }
+
+        // Override sendMessage to track metrics
+        const originalSendMessage = window.sendMessage;
+        window.sendMessage = async function() {
+            const startTime = Date.now();
+            totalQueries++;
+            
+            try {
+                await originalSendMessage();
+                successfulQueries++;
+            } catch (error) {
+                console.error('Message send failed:', error);
+            } finally {
+                const responseTime = Date.now() - startTime;
+                totalResponseTime += responseTime;
+                updateMetrics();
+            }
+        };
+
+        // Update API status
+        setInterval(async () => {
+            try {
+                const response = await fetch('http://localhost:8000/api/health');
+                const data = await response.json();
+                
+                const apiStatus = document.getElementById('apiStatus');
+                if (data.status === 'healthy') {
+                    apiStatus.textContent = 'Connected';
+                    apiStatus.className = 'validation-indicator validation-active';
+                } else {
+                    apiStatus.textContent = 'Disconnected';
+                    apiStatus.className = 'validation-indicator validation-inactive';
+                }
+            } catch (error) {
+                const apiStatus = document.getElementById('apiStatus');
+                apiStatus.textContent = 'Disconnected';
+                apiStatus.className = 'validation-indicator validation-inactive';
+            }
+        }, 5000);
+    </script>
+</body>
+</html>

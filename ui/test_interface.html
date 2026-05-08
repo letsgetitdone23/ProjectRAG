@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mutual Fund RAG Assistant - Test Interface</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+            overflow: hidden;
+        }
+
+        .header {
+            background: #2E7D32;
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 1.8em;
+            margin: 0;
+            font-weight: 600;
+        }
+
+        .disclaimer {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            padding: 15px;
+            margin: 20px;
+            text-align: center;
+        }
+
+        .disclaimer h3 {
+            color: #856404;
+            margin: 0 0 10px 0;
+            font-size: 1.1em;
+        }
+
+        .examples {
+            padding: 20px;
+            background: #f8f9fa;
+        }
+
+        .examples h3 {
+            color: #2E7D32;
+            margin: 0 0 15px 0;
+            font-size: 1.1em;
+        }
+
+        .example-buttons {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .example-btn {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 12px 16px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            text-align: left;
+        }
+
+        .example-btn:hover {
+            background: #45a049;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+        }
+
+        .chat-container {
+            border-top: 1px solid #e9ecef;
+        }
+
+        .chat-messages {
+            height: 300px;
+            overflow-y: auto;
+            padding: 20px;
+            background: #fafafa;
+        }
+
+        .message {
+            margin-bottom: 15px;
+            display: flex;
+            align-items: flex-start;
+        }
+
+        .message.user {
+            justify-content: flex-end;
+        }
+
+        .message.assistant {
+            justify-content: flex-start;
+        }
+
+        .message-content {
+            max-width: 80%;
+            padding: 12px 16px;
+            border-radius: 15px;
+            word-wrap: break-word;
+        }
+
+        .message.user .message-content {
+            background: #2196F3;
+            color: white;
+        }
+
+        .message.assistant .message-content {
+            background: #f1f3f4;
+            border: 1px solid #e9ecef;
+        }
+
+        .message-info {
+            font-size: 0.8em;
+            color: #6c757d;
+            margin-top: 5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .source-link {
+            color: #4CAF50;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .source-link:hover {
+            text-decoration: underline;
+        }
+
+        .confidence-score {
+            background: #4CAF50;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.8em;
+        }
+
+        .input-container {
+            display: flex;
+            gap: 10px;
+            padding: 20px;
+            background: #f8f9fa;
+        }
+
+        .chat-input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 2px solid #ddd;
+            border-radius: 25px;
+            font-size: 16px;
+            outline: none;
+        }
+
+        .chat-input:focus {
+            border-color: #4CAF50;
+        }
+
+        .send-button {
+            padding: 12px 24px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .send-button:hover {
+            background: #45a049;
+        }
+
+        .send-button:disabled {
+            background: #cccccc;
+            cursor: not-allowed;
+        }
+
+        .status {
+            text-align: center;
+            padding: 10px;
+            font-size: 0.9em;
+            color: #6c757d;
+        }
+
+        .status.connected {
+            color: #4CAF50;
+            font-weight: 600;
+        }
+
+        .status.disconnected {
+            color: #dc3545;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>🤖 Mutual Fund RAG Assistant</h1>
+            <div>Facts-Only FAQ System with Real-time Validation</div>
+        </div>
+
+        <!-- Disclaimer -->
+        <div class="disclaimer">
+            <h3>⚠️ Important Disclaimer</h3>
+            <p><strong>Facts-only. No investment advice.</strong> This assistant provides only factual information about mutual funds based on official sources. It does not give investment recommendations, performance comparisons, or financial advice. Always consult with a qualified financial advisor before making investment decisions.</p>
+        </div>
+
+        <!-- Example Questions -->
+        <div class="examples">
+            <h3>📋 Example Questions</h3>
+            <div class="example-buttons">
+                <button class="example-btn" onclick="askQuestion('What is NAV of Nippon India Large Cap Fund Direct Growth?')">
+                    NAV Query
+                </button>
+                <button class="example-btn" onclick="askQuestion('What is expense ratio of HDFC Mid-Cap Fund?')">
+                    Expense Ratio
+                </button>
+                <button class="example-btn" onclick="askQuestion('What is minimum SIP amount for ICICI Prudential Fund?')">
+                    Minimum SIP
+                </button>
+                <button class="example-btn" onclick="askQuestion('What is ELSS lock-in period?')">
+                    ELSS Lock-in
+                </button>
+                <button class="example-btn" onclick="askQuestion('What is riskometer classification?')">
+                    Riskometer
+                </button>
+                <button class="example-btn" onclick="askQuestion('Which benchmark index?')">
+                    Benchmark
+                </button>
+            </div>
+        </div>
+
+        <!-- Chat Interface -->
+        <div class="chat-container">
+            <div class="chat-messages" id="chatMessages">
+                <div class="message assistant">
+                    <div class="message-content">
+                        👋 Welcome! I can help you with factual information about mutual funds including NAV details, expense ratios, SIP amounts, ELSS lock-in periods, riskometer classifications, and benchmark information. All responses are based on official sources and include source citations. What would you like to know?
+                    </div>
+                </div>
+            </div>
+            <div class="input-container">
+                <input type="text" id="chatInput" class="chat-input" placeholder="Ask about mutual funds..." onkeypress="handleKeyPress(event)">
+                <button class="send-button" id="sendButton" onclick="sendMessage()">Send</button>
+            </div>
+        </div>
+
+        <!-- Status -->
+        <div class="status" id="status">
+            Connecting to API...
+        </div>
+    </div>
+
+    <script>
+        let currentSessionId = null;
+        let currentThreadId = null;
+
+        // Initialize
+        window.onload = function() {
+            checkAPIStatus();
+            setInterval(checkAPIStatus, 10000);
+        };
+
+        function askQuestion(question) {
+            document.getElementById('chatInput').value = question;
+            sendMessage();
+        }
+
+        function handleKeyPress(event) {
+            if (event.key === 'Enter') {
+                sendMessage();
+            }
+        }
+
+        async function sendMessage() {
+            const input = document.getElementById('chatInput');
+            const message = input.value.trim();
+            
+            if (!message) return;
+            
+            const sendButton = document.getElementById('sendButton');
+            const chatMessages = document.getElementById('chatMessages');
+            
+            // Add user message
+            addMessage('user', message);
+            
+            // Clear input and disable button
+            input.value = '';
+            sendButton.disabled = true;
+            sendButton.textContent = 'Sending...';
+            
+            try {
+                // Send to API
+                const response = await fetch('http://localhost:8000/api/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        message: message,
+                        session_id: currentSessionId,
+                        thread_id: currentThreadId
+                    })
+                });
+                
+                const data = await response.json();
+                
+                // Add assistant response
+                addMessage('assistant', data.response, data.source_url, data.confidence);
+                
+            } catch (error) {
+                addMessage('assistant', `❌ Error: ${error.message}. Please try again.`, '', 0);
+            } finally {
+                sendButton.disabled = false;
+                sendButton.textContent = 'Send';
+            }
+        }
+
+        function addMessage(type, content, sourceUrl = '', confidence = 0) {
+            const chatMessages = document.getElementById('chatMessages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${type}`;
+            
+            let messageContent = `
+                <div class="message-content">
+                    ${content}
+                    ${sourceUrl ? `
+                        <div class="message-info">
+                            <span class="confidence-score">Confidence: ${(confidence * 100).toFixed(1)}%</span>
+                            <a href="${sourceUrl}" target="_blank" class="source-link">📄 Source</a>
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+            
+            messageDiv.innerHTML = messageContent;
+            chatMessages.appendChild(messageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        async function checkAPIStatus() {
+            const statusElement = document.getElementById('status');
+            
+            try {
+                const response = await fetch('http://localhost:8000/api/health');
+                const data = await response.json();
+                
+                statusElement.textContent = '✅ API Connected';
+                statusElement.className = 'status connected';
+                
+            } catch (error) {
+                statusElement.textContent = '❌ API Disconnected';
+                statusElement.className = 'status disconnected';
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,35 @@
+# Groq LLM Configuration
+llm:
+  type: "groq"
+  model: "llama-3-8b-instruct"  # Groq LLaMA-3-8B-Instruct
+  api_key: "${GROQ_API_KEY}"
+  temperature: 0.1
+  max_tokens: 200
+  timeout: 30
+  rate_limit: 30  # requests per minute
+  
+# Alternative Groq models
+alternative_models:
+  - "llama-3-70b-instruct"  # Larger model for complex queries
+  - "mixtral-8x7b-instruct"  # Mixtral model
+  - "gemma-7b-instruct"     # Google Gemma model
+
+# Groq API settings
+groq_api:
+  base_url: "https://api.groq.com/openai/v1"
+  retry_attempts: 3
+  retry_delay: 1.0  # seconds
+  
+# Performance optimization
+optimization:
+  enable_caching: true
+  cache_ttl: 3600  # 1 hour
+  batch_requests: false  # Groq doesn't support batch requests
+  
+# Fallback configuration
+fallback:
+  enable_template_fallback: true
+  template_priority: true
+  fallback_models:
+    - "llama-3-8b-instruct"
+    - "mixtral-8x7b-instruct"

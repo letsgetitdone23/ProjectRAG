@@ -1,0 +1,286 @@
+name: Daily Data Refresh
+
+on:
+  schedule:
+    # 9:30 AM IST = 4:00 AM UTC
+    - cron: '0 4 * * *'
+  workflow_dispatch:
+    inputs:
+      force_update:
+        description: 'Force update all sources'
+        required: false
+        default: false
+        type: boolean
+      specific_scheme:
+        description: 'Specific scheme to update (optional)'
+        required: false
+        default: ''
+        type: string
+
+env:
+  PYTHON_VERSION: '3.9'
+  NODE_VERSION: '18'
+
+jobs:
+  validate-and-scrape:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+          
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          
+      - name: Install Node.js dependencies
+        if: hashFiles('package.json') != ''
+        run: npm ci
+        
+      - name: Validate configuration
+        run: |
+          python scripts/validate_config.py
+          
+      - name: Test URL accessibility
+        run: |
+          python scripts/test_urls.py
+          
+      - name: Run scraping service
+        env:
+          SEBI_API_KEY: ${{ secrets.SEBI_API_KEY }}
+          AMFI_API_KEY: ${{ secrets.AMFI_API_KEY }}
+          GROWW_API_KEY: ${{ secrets.GROWW_API_KEY }}
+          NIPPON_API_KEY: ${{ secrets.NIPPON_API_KEY }}
+          FORCE_UPDATE: ${{ github.event.inputs.force_update || false }}
+          SPECIFIC_SCHEME: ${{ github.event.inputs.specific_scheme || '' }}
+        run: |
+          python scripts/scrape_data.py
+          
+      - name: Upload raw data artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: raw-data-${{ github.run_number }}
+          path: data/raw/
+          retention-days: 7
+
+  process-and-chunk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    needs: validate-and-scrape
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+          
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          
+      - name: Download raw data artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: raw-data-${{ needs.validate-and-scrape.outputs.run-number || github.run_number }}
+          path: data/raw/
+          
+      - name: Process and clean data
+        run: |
+          python scripts/process_data.py
+          
+      - name: Generate chunks
+        run: |
+          python scripts/generate_chunks.py
+          
+      - name: Validate chunk quality
+        run: |
+          python scripts/validate_chunks.py
+          
+      - name: Upload processed data artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: processed-data-${{ github.run_number }}
+          path: data/processed/
+          retention-days: 7
+
+  generate-embeddings:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    needs: process-and-chunk
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+          
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          
+      - name: Download processed data artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: processed-data-${{ needs.process-and-chunk.outputs.run-number || github.run_number }}
+          path: data/processed/
+          
+      - name: Generate embeddings
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          HUGGINGFACE_API_KEY: ${{ secrets.HUGGINGFACE_API_KEY }}
+        run: |
+          python scripts/generate_embeddings.py
+          
+      - name: Validate embedding quality
+        run: |
+          python scripts/validate_embeddings.py
+          
+      - name: Upload embedding artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: embeddings-${{ github.run_number }}
+          path: data/embeddings/
+          retention-days: 7
+
+  update-vector-store:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: generate-embeddings
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+          
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          
+      - name: Download embedding artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: embeddings-${{ needs.generate-embeddings.outputs.run-number || github.run_number }}
+          path: data/embeddings/
+          
+      - name: Update vector store
+        env:
+          PINECONE_API_KEY: ${{ secrets.PINECONE_API_KEY }}
+          PINECONE_ENVIRONMENT: ${{ secrets.PINECONE_ENVIRONMENT }}
+          WEAVIATE_URL: ${{ secrets.WEAVIATE_URL }}
+          WEAVIATE_API_KEY: ${{ secrets.WEAVIATE_API_KEY }}
+        run: |
+          python scripts/update_vector_store.py
+          
+      - name: Verify vector store update
+        run: |
+          python scripts/verify_vector_store.py
+
+  notify-and-cleanup:
+    runs-on: ubuntu-latest
+    needs: [validate-and-scrape, process-and-chunk, generate-embeddings, update-vector-store]
+    if: always()
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests
+          
+      - name: Generate completion report
+        env:
+          WORKFLOW_STATUS: ${{ job.status }}
+          SCRAPE_STATUS: ${{ needs.validate-and-scrape.result }}
+          PROCESS_STATUS: ${{ needs.process-and-chunk.result }}
+          EMBEDDING_STATUS: ${{ needs.generate-embeddings.result }}
+          VECTOR_STATUS: ${{ needs.update-vector-store.result }}
+        run: |
+          python scripts/generate_report.py
+          
+      - name: Send notification
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+          TEAMS_WEBHOOK: ${{ secrets.TEAMS_WEBHOOK }}
+          EMAIL_SMTP: ${{ secrets.EMAIL_SMTP }}
+          EMAIL_USER: ${{ secrets.EMAIL_USER }}
+          EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
+        run: |
+          python scripts/notify_completion.py
+          
+      - name: Cleanup artifacts
+        if: success()
+        run: |
+          python scripts/cleanup_artifacts.py
+
+  health-check:
+    runs-on: ubuntu-latest
+    needs: update-vector-store
+    if: success()
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests
+          
+      - name: Run health checks
+        env:
+          PINECONE_API_KEY: ${{ secrets.PINECONE_API_KEY }}
+          API_BASE_URL: ${{ secrets.API_BASE_URL }}
+        run: |
+          python scripts/health_check.py
+          
+      - name: Update monitoring dashboard
+        env:
+          DATADOG_API_KEY: ${{ secrets.DATADOG_API_KEY }}
+          PROMETHEUS_URL: ${{ secrets.PROMETHEUS_URL }}
+        run: |
+          python scripts/update_monitoring.py
