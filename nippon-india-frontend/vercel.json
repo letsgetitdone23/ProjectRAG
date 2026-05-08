@@ -1,25 +1,8 @@
 {
   "version": 2,
   "name": "nippon-india-faq",
-  "builds": [
-    {
-      "src": "nippon-india-frontend/package.json",
-      "use": "@vercel/next"
-    }
-  ],
-  "routes": [
-    {
-      "src": "/(.*)",
-      "dest": "/index.html"
-    }
-  ],
   "env": {
     "NEXT_PUBLIC_API_URL": "https://nippon-india-rag-api.onrender.com"
-  },
-  "functions": {
-    "nippon-india-frontend/src/app/api/chat/route.js": {
-      "maxDuration": 30
-    }
   },
   "regions": ["sin1"],
   "framework": "nextjs"
