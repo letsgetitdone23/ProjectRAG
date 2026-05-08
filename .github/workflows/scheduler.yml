@@ -5,7 +5,6 @@ on:
     - cron: '30 20 * * *'
   # Run on manual trigger
   workflow_dispatch:
-    types: [ingest]
 
 jobs:
   data-ingestion:

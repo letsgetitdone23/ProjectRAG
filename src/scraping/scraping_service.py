@@ -163,7 +163,7 @@ class ScrapingService:
                 }
             })
             
-            return content
+            return extracted_content
             
         except Exception as e:
             self.logger.error(f"Error scraping {url_info.url}: {str(e)}")

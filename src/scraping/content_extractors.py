@@ -9,7 +9,7 @@ from bs4 import BeautifulSoup, Tag
 import PyPDF2
 import pdfplumber
 import pandas as pd
-from io import BytesIO
+from io import BytesIO, StringIO
 import re
 from urllib.parse import urljoin, urlparse
 from dataclasses import dataclass
@@ -238,7 +238,7 @@ class HTMLExtractor:
         for table in soup.find_all('table'):
             try:
                 # Convert table to DataFrame
-                df = pd.read_html(str(table))[0]
+                df = pd.read_html(StringIO(str(table)))[0]
                 
                 # Clean and process table data
                 table_data = {

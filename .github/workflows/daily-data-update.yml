@@ -36,9 +36,6 @@ jobs:
           SCRAPE_ALL_SOURCES: "true"
           MAX_RETRIES: "3"
         continue-on-error: false
-        outputs:
-          success: ${{ steps.outcome == 'success' }}
-          count: ${{ steps.scrape.outputs.count || '0' }}
 
   # Job 2: Wait for scraping completion
   wait-scraping:
@@ -82,8 +79,6 @@ jobs:
           CHUNK_STRATEGY: "hybrid"
           MAX_CHUNK_SIZE: "500"
           MIN_CHUNK_SIZE: "200"
-        outputs:
-          count: ${{ steps.create-chunks.outputs.chunk_count || '0' }}
 
   # Job 4: Embedding Generation
   generate-embeddings:
@@ -114,8 +109,6 @@ jobs:
           MODEL_NAME: "BAAI/bge-large-en-v1.5"
           BATCH_SIZE: "32"
           UPDATE_VECTOR_STORE: "true"
-        outputs:
-          count: ${{ steps.create-embeddings.outputs.embedding_count || '0' }}
 
   # Job 5: Update Local SQLite Vector Store
   update-vector-store:
