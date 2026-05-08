@@ -22,7 +22,6 @@ services:
       - key: CORS_ORIGINS
         value: https://nippon-india-faq.vercel.app,https://nipponindiaim.com
     healthCheckPath: /api/health
-    healthCheckTimeout: 300
     autoDeploy: true
     domains:
       - nippon-india-rag-api.onrender.com
